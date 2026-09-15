@@ -1,0 +1,67 @@
+name: Build NAT Predictor Client
+
+on:
+  push:
+    branches:
+      - feat/nat-port-prediction
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply NAT prediction integration patch
+        run: git apply .github/patches/nat-port-prediction.patch
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build NetBird client
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          mkdir -p client/linux/amd64
+          go build -trimpath -ldflags "-s -w -X github.com/netbirdio/netbird/version.version=nat-port-prediction-${GITHUB_SHA::7}" -o client/linux/amd64/netbird ./client
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: client/Dockerfile
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            TARGETPLATFORM=linux/amd64
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/netbird-nat-predictor:latest
+            ghcr.io/${{ github.repository_owner }}/netbird-nat-predictor:${{ github.sha }}
+
+      - name: Summary
+        run: |
+          echo "### NetBird NAT predictor image" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "ghcr.io/${GITHUB_REPOSITORY_OWNER}/netbird-nat-predictor:latest" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "Enable with: NB_NAT_PORT_PREDICTION=true" >> "$GITHUB_STEP_SUMMARY"
