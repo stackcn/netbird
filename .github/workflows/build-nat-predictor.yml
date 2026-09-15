@@ -46,8 +46,8 @@ jobs:
           GOOS: linux
           GOARCH: amd64
         run: |
-          mkdir -p client/linux/amd64
-          go build -trimpath -ldflags "-s -w -X github.com/netbirdio/netbird/version.version=nat-port-prediction-${GITHUB_SHA::7}" -o client/linux/amd64/netbird ./client
+          mkdir -p linux/amd64
+          go build -trimpath -ldflags "-s -w -X github.com/netbirdio/netbird/version.version=nat-port-prediction-${GITHUB_SHA::7}" -o linux/amd64/netbird ./client
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
