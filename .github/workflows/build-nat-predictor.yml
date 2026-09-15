@@ -17,8 +17,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Apply NAT prediction integration patch
-        run: git apply .github/patches/nat-port-prediction.patch
+      - name: Integrate NAT predictor hook
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("client/internal/peer/worker_ice.go")
+          text = path.read_text()
+          old = """\tif candidate.Type() == ice.CandidateTypeServerReflexive {\n\t\tw.injectPortForwardedCandidate(candidate)\n\t}\n"""
+          new = """\tif candidate.Type() == ice.CandidateTypeServerReflexive {\n\t\tw.injectPortForwardedCandidate(candidate)\n\t\tw.observeNATPortPrediction(candidate)\n\t}\n"""
+          if old not in text:
+              raise SystemExit("worker_ice.go integration point not found")
+          path.write_text(text.replace(old, new, 1))
+          PY
+          gofmt -w client/internal/peer/worker_ice.go client/internal/peer/nat_port_prediction.go
+          git diff --check
 
       - name: Set up Go
         uses: actions/setup-go@v5
