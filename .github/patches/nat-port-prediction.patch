@@ -1,0 +1,10 @@
+diff --git a/client/internal/peer/worker_ice.go b/client/internal/peer/worker_ice.go
+--- a/client/internal/peer/worker_ice.go
++++ b/client/internal/peer/worker_ice.go
+@@ -371,6 +371,7 @@ func (w *WorkerICE) onICECandidate(candidate ice.Candidate) {
+ 
+ 	if candidate.Type() == ice.CandidateTypeServerReflexive {
+ 		w.injectPortForwardedCandidate(candidate)
++		w.observeNATPortPrediction(candidate)
+ 	}
+ }
