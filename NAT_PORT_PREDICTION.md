@@ -8,6 +8,8 @@ NetBird/Pion continues to gather and signal the normal ICE candidates first. The
 
 The remote Pion ICE agent performs its normal connectivity checks against those endpoints. If one succeeds, normal ICE selection and peer-reflexive learning take over. TURN/Relay remains the fallback.
 
+The predictor implementation lives in `client/internal/peer/nat_port_prediction.go`. The experimental workflow injects a one-line call into `worker_ice.go` before building; this keeps the upstream file easy to rebase while the branch is under test.
+
 ## Enable
 
 The feature is disabled by default. Set on the NetBird client container:
